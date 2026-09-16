@@ -47,7 +47,7 @@ button{border:0;border-radius:11px;padding:11px 15px;background:#d35400;color:#f
 <div class="grid" style="margin-top:12px">
 <div><label>Precio PLA ($/kg)</label><input id="filamento" type="number" value="25000"></div>
 <div><label>Electricidad ($/kWh)</label><input id="kwh" type="number" value="174.60" step=".01"></div>
-<div><label>Consumo A1 (W)</label><input id="watts" type="number" value="100"></div>
+<div><label>Consumo A1 (W)</label><input id="watts" type="number" value="130"></div>
 <div><label>Valor A1 Combo ($)</label><input id="maquina" type="number" value="1650000"></div>
 <div><label>Vida útil (horas)</label><input id="vida" type="number" value="5000"></div>
 <div><label>Desperdicio / fallas (%)</label><input id="desperdicio" type="number" value="5" step=".5"></div>
@@ -81,13 +81,20 @@ button{border:0;border-radius:11px;padding:11px 15px;background:#d35400;color:#f
 </div>
 
 <script>
-const defaults={filamento:25000,kwh:174.60,watts:100,maquina:1650000,vida:5000,desperdicio:5,mano:0,pack:0,comision:0,markup:100};
+const defaults={filamento:25000,kwh:174.60,watts:130,maquina:1650000,vida:5000,desperdicio:5,mano:0,pack:0,comision:0,markup:100};
+function $(id){return document.getElementById(id)}
+const savedCfg=JSON.parse(localStorage.getItem('brio_config')||'null');
+Object.keys(defaults).forEach(k=>$(k).value=(savedCfg&&savedCfg[k]!==undefined?savedCfg[k]:defaults[k]));
 let products=JSON.parse(localStorage.getItem('brio_products')||'null')||[
  {n:1,name:'Producto de ejemplo',g:152,h:4.2,img:''},
  {n:44,name:'Producto 44',g:125,h:3,img:''}
 ];
-function $(id){return document.getElementById(id)}
-function save(){localStorage.setItem('brio_products',JSON.stringify(products))}
+function save(){
+ localStorage.setItem('brio_products',JSON.stringify(products));
+ const cfgData={}; Object.keys(defaults).forEach(k=>cfgData[k]=Number($(k).value)||0);
+ localStorage.setItem('brio_config',JSON.stringify(cfgData));
+}
+function saveConfig(){const cfgData={};Object.keys(defaults).forEach(k=>cfgData[k]=Number($(k).value)||0);localStorage.setItem('brio_config',JSON.stringify(cfgData));}
 function money(n){return n.toLocaleString('es-AR',{style:'currency',currency:'ARS',maximumFractionDigits:0})}
 function cfg(){let o={};for(let k in defaults)o[k]=Number($(k).value)||0;return o}
 function calc(p){
@@ -122,10 +129,14 @@ function buscarProducto(){
  r.innerHTML=`<div class="result"><div class="resultgrid">${photo}<div><div style="color:#bfc7d4;font-size:13px">PRODUCTO #${p.n}</div><div style="font-size:22px;font-weight:800;margin:4px 0 12px">${esc(p.name)}</div><div class="muted" style="color:#bfc7d4">${p.g} g · ${p.h} h</div><div style="margin-top:13px;color:#bfc7d4;font-size:13px">PRECIO DE VENTA</div><div class="price">${money(x.venta)}</div></div></div><div class="sep"></div><div class="line"><span>Filamento</span><b>${money(x.fil)}</b></div><div class="line"><span>Electricidad</span><b>${money(x.luz)}</b></div><div class="line"><span>Amortización A1</span><b>${money(x.amort)}</b></div><div class="line"><span>Mano de obra + packaging</span><b>${money(x.mano+x.pack)}</b></div><div class="line"><span>Desperdicio / fallas</span><b>${money(x.desperdicio)}</b></div><div class="line"><span>Costo real</span><b>${money(x.costo)}</b></div><div class="line"><span>Precio mínimo</span><b>${money(x.minimo)}</b></div><div class="line"><span>Ganancia por unidad</span><b>${money(x.ganancia)}</b></div></div>`;
 }
 function refresh(){if($('buscar').value)buscarProducto()}
-function restaurar(){if(confirm('¿Restaurar los valores iniciales?')){for(let k in defaults)$(k).value=defaults[k];refresh()}}
-Object.keys(defaults).forEach(k=>$(k).addEventListener('input',refresh));
+function restaurar(){if(confirm('¿Restaurar los valores iniciales?')){for(let k in defaults)$(k).value=defaults[k];saveConfig();refresh()}}
+Object.keys(defaults).forEach(k=>$(k).addEventListener('input',()=>{saveConfig();refresh()}));
 $('buscar').addEventListener('keydown',e=>{if(e.key==='Enter')buscarProducto()});
 render();
+save();
+window.addEventListener('beforeunload',save);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')save()});
+if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));}
 </script>
 </body>
 </html>
