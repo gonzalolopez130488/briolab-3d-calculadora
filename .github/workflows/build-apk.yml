@@ -17,7 +17,7 @@ jobs:
       - name: Descomprimir proyecto APK
         run: |
           mkdir apk_project
-          unzip -q BrioLab3D_APK_DESDE_CERO_v3.zip -d apk_project
+          unzip -q BrioLab3D_APK_DESDE_CERO_v5.zip -d apk_project
           echo "Proyecto descomprimido:"
           find apk_project -name settings.gradle -o -name build.gradle
 
